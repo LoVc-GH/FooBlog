@@ -1,0 +1,63 @@
+﻿@page "/"
+@inject HttpClient Http
+@inject IToaster toaster
+
+<div hidden="@_loaded" class="text-center">
+    <div class="spinner-grow" style="width: 3rem; height: 3rem;" role="status">
+        <span class="sr-only">Loading...</span>
+    </div>
+</div>
+@if (_blogs != null)
+{
+    <div class="row row-cols-1 row-cols-md-3">
+        @foreach (var item in _blogs)
+        {
+            <div class="col mb-4">
+                <div class="card h-100">
+                    <img src="data:image/jpg;base64, @item.Image" class="card-img-top" alt="Business Central">
+                    <div class="card-body">
+                        <h5 class="card-title">@item.Title</h5>
+                        <h6 class="card-subtitle mb-2 text-muted">Posted on @item.CreatedOn.ToShortDateString()</h6>
+                        <p class="card-text">@item.Description</p>
+                    </div>
+                    <div class="card-footer d-flex justify-content-between">
+                        <p class="pt-2 mb-0">
+                            <a href="/blogs/@item.ID" class="card-link">Read</a>
+                            <a href="#" class="card-link">Comments (4)</a>
+                            <AuthorizeView Roles="Admin"><a href="/blogs/@item.ID/edit" class="card-link">Edit</a></AuthorizeView>
+                        </p>
+                        <div>
+                            <a href="#" type="button" class="btn btn-outline-success btn-sm px-2 waves-effect show_login">
+                                <span class="value">2</span>
+                                <i class="oi oi-thumb-up ml-1"></i>
+                            </a>
+                            <a href="#" type="button" class="btn btn-outline-danger btn-sm px-2 waves-effect show_login">
+                                <span class="value">1</span>
+                                <i class="oi oi-thumb-down ml-1"></i>
+                            </a>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        }
+    </div>
+}
+
+
+@code{
+    private List<Blog> _blogs = new List<Blog>();
+    private bool _loaded = false;
+    protected override async Task OnInitializedAsync()
+    {
+        try
+        {
+            var result = await Http.GetStringAsync("blogs");
+            _blogs = JsonConvert.DeserializeObject<List<Blog>>(JObject.Parse(result).SelectToken("$.value").ToString());
+        }
+        catch {
+            toaster.Error($"Error while retrieving blog entries!");
+        }
+        _loaded = true;
+        await base.OnInitializedAsync();
+    }
+}

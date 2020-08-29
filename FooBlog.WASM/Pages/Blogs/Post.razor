@@ -1,0 +1,89 @@
+﻿@page "/post"
+@using System.Text.Json;
+@using System.IO;
+@using System;
+
+@inject HttpClient http
+@inject IToaster toaster
+@inject NavigationManager navigationManager
+
+<EditForm Model="@blog" OnValidSubmit="HandleSubmit">
+    <DataAnnotationsValidator />
+    <div class="form-group">
+        <div class="row">
+            <div class="col-6">
+                <input class="form-control" type="text" @bind="blog.Title" placeholder="Title">
+                <ValidationMessage For="() => blog.Title" /><br />
+
+                <input class="form-control" type="text" @bind="blog.Description" placeholder="Description">
+                <ValidationMessage For="() => blog.Description" /><br />
+
+                <div class="input-group mb-3">
+                    <div class="input-group-prepend">
+                        <span class="input-group-text" id="inputGroupFileAddon01">Image</span>
+                    </div>
+                    <div class="custom-file">
+                        <InputFile OnChange="HandleSelection" class="custom-file-input" id="inputGroupFile01" aria-describedby="inputGroupFileAddon01" />
+                        <label class="custom-file-label" for="inputGroupFile01">Choose image</label>
+                    </div>
+                </div>
+
+                <textarea rows="25" class="form-control"
+                          @bind-value="blog.Post"
+                          @bind-value:event="oninput">
+                </textarea>
+                <ValidationMessage For="() => blog.Post" />
+            </div>
+            <div class="col-6">
+                <MarkdownRenderer Value="@blog.Post" />
+            </div>
+        </div>
+    </div>
+    <button type="submit" class="btn btn-info" @bind>Post</button>
+</EditForm>
+
+@code {
+    private BlogDTO blog = new BlogDTO();
+
+    protected override Task OnInitializedAsync()
+    {
+        blog.Post = "";
+        return base.OnInitializedAsync();
+    }
+
+    async Task HandleSelection(IFileListEntry[] files)
+    {
+        var file = files.FirstOrDefault();
+        if (file != null)
+        {
+            // Just load into .NET memory to show it can be done
+            // Alternatively it could be saved to disk, or parsed in memory, or similar
+            using (var memoryStream = new MemoryStream())
+            {
+                await file.Data.CopyToAsync(memoryStream);
+                blog.Image = Convert.ToBase64String(memoryStream.ToArray());
+            }
+        }
+    }
+
+    private void HandleSubmit()
+    {
+        var options = new JsonSerializerOptions
+        {
+            WriteIndented = true,
+            PropertyNamingPolicy = null
+        };
+
+        try
+        {
+            blog.CreatedOn = DateTime.Now;
+            http.PostAsJsonAsync<BlogDTO>("blogs", blog, options);
+            toaster.Success("Blog posted succesfully.");
+            navigationManager.NavigateTo("/");
+        }
+        catch
+        {
+            toaster.Error("Error while posting blog!");
+        }
+    }
+}

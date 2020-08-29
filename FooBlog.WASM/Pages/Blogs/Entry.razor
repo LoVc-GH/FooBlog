@@ -1,0 +1,81 @@
+﻿@page "/blogs/{Id}"
+
+@if (blog != null)
+{
+    <div class="col-8">
+        <MarkdownRenderer Value="@blog.Post" />
+
+        <div class="card gedf-card">
+            <div class="card-header">
+                <div class="d-flex justify-content-between align-items-center">
+                    <div class="d-flex justify-content-between align-items-center">                        
+                        <div class="ml-2">
+                            <div class="h5 m-0">LeeCross</div>
+                            <div class="h7 text-muted">Commented on @DateTime.Now.ToShortDateString() - @DateTime.Now.ToShortTimeString()</div>
+                        </div>
+                    </div>
+                </div>
+
+            </div>
+            <div class="card-body">
+                <p class="card-text">
+                    Lorem ipsum dolor sit amet consectetur adipisicing elit. Magnam omnis nihil, aliquam est, voluptates officiis iure soluta
+                    alias vel odit, placeat reiciendis ut libero! Quas aliquid natus cumque quae repellendus. Lorem
+                    ipsum dolor sit amet consectetur adipisicing elit. Ipsa, excepturi. Doloremque, reprehenderit!
+                    Quos in maiores, soluta doloremque molestiae reiciendis libero expedita assumenda fuga quae.
+                    Consectetur id molestias itaque facere? Hic!
+                </p>
+                <!--- \\\\\\\Post-->
+                <div class="card gedf-card">
+                    <div class="card-header">
+                        <div class="d-flex justify-content-between align-items-center">
+                            <div class="d-flex justify-content-between align-items-center">
+                                <div class="ml-2">
+                                    <div class="h5 m-0">LeeCross</div>
+                                    <div class="h7 text-muted">Commented on @DateTime.Now.ToShortDateString() - @DateTime.Now.ToShortTimeString()</div>
+                                </div>
+                            </div>
+                        </div>
+
+                    </div>
+                    <div class="card-body">
+                        <p class="card-text">
+                            Lorem ipsum dolor sit amet consectetur adipisicing elit. Ipsam sunt fugit reprehenderit consectetur exercitationem odio,
+                            quam nobis? Officiis, similique, harum voluptate, facilis voluptas pariatur dolorum tempora sapiente
+                            eius maxime quaerat.
+                            <a href="https://mega.nz/#!1J01nRIb!lMZ4B_DR2UWi9SRQK5TTzU1PmQpDtbZkMZjAIbv97hU" target="_blank">https://mega.nz/#!1J01nRIb!lMZ4B_DR2UWi9SRQK5TTzU1PmQpDtbZkMZjAIbv97hU</a>
+                        </p>
+                    </div>
+                    <div class="card-footer">
+                        <a href="#" class="card-link"><i class="fa fa-comment"></i> Comment</a>
+                    </div>
+                </div>
+                <!-- Post /////-->
+
+            </div>
+            <div class="card-footer">
+                <a href="#" class="card-link"><i class="oi oi-cloudy"></i> Reply</a>
+            </div>
+
+        </div>
+        <!-- Post /////-->
+    </div>
+
+}
+
+@inject HttpClient http
+
+@code {
+
+    [Parameter]
+    public string Id { get; set; }
+
+    private Blog blog;
+
+    protected override async Task OnInitializedAsync()
+    {
+        blog = JsonConvert.DeserializeObject<Blog>(await http.GetStringAsync($"blogs/{Id}"));
+        await base.OnInitializedAsync();
+    }
+}
+

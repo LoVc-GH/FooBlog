@@ -1,0 +1,55 @@
+using System;
+using System.Net.Http;
+using System.Collections.Generic;
+using System.Threading.Tasks;
+using System.Text;
+using Microsoft.AspNetCore.Components.WebAssembly.Hosting;
+using Microsoft.Extensions.Configuration;
+using Microsoft.Extensions.DependencyInjection;
+using Microsoft.Extensions.Logging;
+using StardustDL.RazorComponents.Markdown;
+using Microsoft.AspNetCore.Components.WebAssembly.Authentication;
+using Sotsera.Blazor.Toaster.Core.Models;
+
+namespace FooBlog.WASM
+{
+    public class Program
+    {
+        public static async Task Main(string[] args)
+        {
+            var builder = WebAssemblyHostBuilder.CreateDefault(args);
+            builder.RootComponents.Add<App>("app");
+
+            // We register a named HttpClient here for the API
+            builder.Services.AddHttpClient("api", options => options.BaseAddress = new Uri("https://localhost:44324/odata/"))
+                .AddHttpMessageHandler(sp =>
+                {
+                    var handler = sp.GetService<AuthorizationMessageHandler>()
+                        .ConfigureHandler(
+                            authorizedUrls: new[] { "https://localhost:44324/" },
+                            scopes: new[] { "FooBlog_api" });
+                    return handler;
+                });
+
+            // we use the api client as default HttpClient
+            builder.Services.AddScoped(sp => sp.GetService<IHttpClientFactory>().CreateClient("api"));
+
+            builder.Services.AddOidcAuthentication(options =>
+            {
+                builder.Configuration.Bind("oidc", options.ProviderOptions);
+                options.UserOptions.RoleClaim = "role";
+            });
+
+            builder.Services.AddSingleton<IMarkdownComponentService, MarkdownComponentService>();
+            builder.Services.AddToaster(config =>
+            {
+                //example customizations
+                config.PositionClass = Defaults.Classes.Position.BottomRight;
+                config.PreventDuplicates = true;
+                config.NewestOnTop = false;                
+            });
+
+            await builder.Build().RunAsync();
+        }
+    }
+}
