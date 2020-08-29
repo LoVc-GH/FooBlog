@@ -26,20 +26,20 @@ namespace FooBlog.Data
 
         protected override void OnModelCreating(ModelBuilder modelBuilder)
         {
-            //modelBuilder.Entity<BlogCategory>()
-            //        .HasKey(bc => new { bc.BlogID, bc.CategoryID });
-            //modelBuilder.Entity<BlogCategory>()
-            //    .HasOne(bc => bc.Blog)
-            //    .WithMany(b => b.Categories)
-            //    .HasForeignKey(bc => bc.BlogID);
-            //modelBuilder.Entity<BlogCategory>()
-            //    .HasOne(bc => bc.Category)
-            //    .WithMany(c => c.BlogCategories)
-            //    .HasForeignKey(bc => bc.CategoryID);
-            //modelBuilder.Entity<Comment>()
-            //            .HasOne(c => c.Blog)
-            //            .WithMany(b => b.Comments)
-            //            .HasForeignKey(c => c.BlogID);
+            modelBuilder.Entity<BlogCategory>()
+                    .HasKey(bc => new { bc.BlogID, bc.CategoryID });
+            modelBuilder.Entity<BlogCategory>()
+                .HasOne(bc => bc.Blog)
+                .WithMany(b => b.Categories)
+                .HasForeignKey(bc => bc.BlogID);
+            modelBuilder.Entity<BlogCategory>()
+                .HasOne(bc => bc.Category)
+                .WithMany(c => c.BlogCategories)
+                .HasForeignKey(bc => bc.CategoryID);
+            modelBuilder.Entity<Comment>()
+                        .HasOne(c => c.Blog)
+                        .WithMany(b => b.Comments)
+                        .HasForeignKey(c => c.BlogID);
             base.OnModelCreating(modelBuilder);
         }
     }
