@@ -63,7 +63,16 @@
 
     private async Task DeleteBlog()
     {
-        await http.DeleteAsync($"blogs/{Id}");
+        try
+        {
+            await http.DeleteAsync($"blogs/{Id}");
+            toaster.Success("Blog deleted succesfully.");
+            navigationManager.NavigateTo("/");
+        }
+        catch
+        {
+            toaster.Error("Error while deleting blog!");
+        }
     }
 
     async Task HandleSelection(IFileListEntry[] files)
