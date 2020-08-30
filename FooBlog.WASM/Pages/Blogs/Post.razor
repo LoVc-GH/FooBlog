@@ -3,51 +3,58 @@
 @using System.IO;
 @using System;
 
-@inject HttpClient http
-@inject IToaster toaster
-@inject NavigationManager navigationManager
+@inject IHttpClientFactory _factory
+@inject IToaster _toaster
+@inject NavigationManager _navigationManager
 
-<EditForm Model="@blog" OnValidSubmit="HandleSubmit">
-    <DataAnnotationsValidator />
-    <div class="form-group">
-        <div class="row">
-            <div class="col-6">
-                <input class="form-control" type="text" @bind="blog.Title" placeholder="Title">
-                <ValidationMessage For="() => blog.Title" /><br />
+<AuthorizeView Roles="Admin">
+    <Authorized>
+        <EditForm Context="form" Model="@_blog" OnValidSubmit="HandleSubmit">
+            <DataAnnotationsValidator />
+            <div class="form-group">
+                <div class="row">
+                    <div class="col-6">
+                        <input class="form-control" type="text" @bind="_blog.Title" placeholder="Title">
+                        <ValidationMessage For="() => _blog.Title" /><br />
 
-                <input class="form-control" type="text" @bind="blog.Description" placeholder="Description">
-                <ValidationMessage For="() => blog.Description" /><br />
+                        <input class="form-control" type="text" @bind="_blog.Description" placeholder="Description">
+                        <ValidationMessage For="() => _blog.Description" /><br />
 
-                <div class="input-group mb-3">
-                    <div class="input-group-prepend">
-                        <span class="input-group-text" id="inputGroupFileAddon01">Image</span>
+                        <div class="input-group mb-3">
+                            <div class="input-group-prepend">
+                                <span class="input-group-text" id="inputGroupFileAddon01">Image</span>
+                            </div>
+                            <div class="custom-file">
+                                <InputFile OnChange="HandleSelection" class="custom-file-input" id="inputGroupFile01" aria-describedby="inputGroupFileAddon01" />
+                                <label class="custom-file-label" for="inputGroupFile01">Choose image</label>
+                            </div>
+                        </div>
+
+                        <textarea rows="25" class="form-control"
+                                  @bind-value="_blog.Post"
+                                  @bind-value:event="oninput">
+                </textarea>
+                        <ValidationMessage For="() => _blog.Post" />
                     </div>
-                    <div class="custom-file">
-                        <InputFile OnChange="HandleSelection" class="custom-file-input" id="inputGroupFile01" aria-describedby="inputGroupFileAddon01" />
-                        <label class="custom-file-label" for="inputGroupFile01">Choose image</label>
+                    <div class="col-6">
+                        <MarkdownRenderer Value="@_blog.Post" />
                     </div>
                 </div>
-
-                <textarea rows="25" class="form-control"
-                          @bind-value="blog.Post"
-                          @bind-value:event="oninput">
-                </textarea>
-                <ValidationMessage For="() => blog.Post" />
             </div>
-            <div class="col-6">
-                <MarkdownRenderer Value="@blog.Post" />
-            </div>
-        </div>
-    </div>
-    <button type="submit" class="btn btn-info" @bind>Post</button>
-</EditForm>
+            <button type="submit" class="btn btn-info" @bind>Post</button>
+        </EditForm>
+    </Authorized>
+    <NotAuthorized>
+        You do not belong here
+    </NotAuthorized>
+</AuthorizeView>
 
 @code {
-    private BlogDTO blog = new BlogDTO();
+    private BlogDTO _blog = new BlogDTO();
 
     protected override Task OnInitializedAsync()
     {
-        blog.Post = "";
+        _blog.Post = "";
         return base.OnInitializedAsync();
     }
 
@@ -61,7 +68,7 @@
             using (var memoryStream = new MemoryStream())
             {
                 await file.Data.CopyToAsync(memoryStream);
-                blog.Image = Convert.ToBase64String(memoryStream.ToArray());
+                _blog.Image = Convert.ToBase64String(memoryStream.ToArray());
             }
         }
     }
@@ -76,14 +83,15 @@
 
         try
         {
-            blog.CreatedOn = DateTime.Now;
-            http.PostAsJsonAsync<BlogDTO>("blogs", blog, options);
-            toaster.Success("Blog posted succesfully.");
-            navigationManager.NavigateTo("/");
+            _blog.CreatedOn = DateTime.Now;
+            var client = _factory.CreateClient("authenticated"); 
+            client.PostAsJsonAsync<BlogDTO>("blogs", _blog, options);
+            _toaster.Success("Blog posted succesfully.");
+            _navigationManager.NavigateTo("/");
         }
         catch
         {
-            toaster.Error("Error while posting blog!");
+            _toaster.Error("Error while posting blog!");
         }
     }
 }

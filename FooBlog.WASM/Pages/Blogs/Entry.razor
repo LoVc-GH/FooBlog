@@ -1,9 +1,11 @@
 ﻿@page "/blogs/{Id}"
 
-@if (blog != null)
+@inject IHttpClientFactory _factory
+
+@if (_blog != null)
 {
     <div class="col-8">
-        <MarkdownRenderer Value="@blog.Post" />
+        <MarkdownRenderer Value="@_blog.Post" />
 
         <div class="card gedf-card">
             <div class="card-header">
@@ -70,11 +72,12 @@
     [Parameter]
     public string Id { get; set; }
 
-    private Blog blog;
+    private Blog _blog;
 
     protected override async Task OnInitializedAsync()
     {
-        blog = JsonConvert.DeserializeObject<Blog>(await http.GetStringAsync($"blogs/{Id}"));
+        var client = _factory.CreateClient("anonymous");
+        _blog = JsonConvert.DeserializeObject<Blog>(await client.GetStringAsync($"blogs/{Id}"));
         await base.OnInitializedAsync();
     }
 }

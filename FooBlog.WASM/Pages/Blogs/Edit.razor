@@ -3,61 +3,80 @@
 @using System.IO;
 @using System;
 
-@inject HttpClient http
-@inject IToaster toaster
-@inject NavigationManager navigationManager
+@inject IHttpClientFactory _factory
+@inject IToaster _toaster
+@inject NavigationManager _navigationManager
+@inject IAuthorizationService _authorizationService
 
-@if (blog != null)
-{
-    <EditForm Model="@blog" OnValidSubmit="HandleSubmit">
-        <DataAnnotationsValidator />
-        <div class="form-group">
-            <div class="row">
-                <div class="col-5" style="position:fixed;z-index:200">
-                    <input class="form-control" type="text" @bind="blog.Title" placeholder="Title">
-                    <ValidationMessage For="() => blog.Title" /><br />
 
-                    <input class="form-control" type="text" @bind="blog.Description" placeholder="Description">
-                    <ValidationMessage For="() => blog.Description" /><br />
+<AuthorizeView Roles="Admin">
+    <Authorized>
+        @if (_blog != null)
+        {
+            <EditForm Context="form" Model="@_blog" OnValidSubmit="HandleSubmit">
+                <DataAnnotationsValidator />
+                <div class="form-group">
+                    <div class="row">
+                        <div class="col-5" style="position:fixed;z-index:200">
+                            <input class="form-control" type="text" @bind="_blog.Title" placeholder="Title">
+                            <ValidationMessage For="() => _blog.Title" /><br />
 
-                    <div class="input-group mb-3">
-                        <div class="input-group-prepend">
-                            <span class="input-group-text" id="inputGroupFileAddon01">Image</span>
+                            <input class="form-control" type="text" @bind="_blog.Description" placeholder="Description">
+                            <ValidationMessage For="() => _blog.Description" /><br />
+
+                            <div class="input-group mb-3">
+                                <div class="input-group-prepend">
+                                    <span class="input-group-text" id="inputGroupFileAddon01">Image</span>
+                                </div>
+                                <div class="custom-file">
+                                    <InputFile OnChange="HandleSelection" class="custom-file-input" id="inputGroupFile01" aria-describedby="inputGroupFileAddon01" />
+                                    <label class="custom-file-label" for="inputGroupFile01">Choose image</label>
+                                </div>
+                            </div>
+
+                            <textarea rows="25" class="form-control"
+                                      @bind-value="_blog.Post"
+                                      @bind-value:event="oninput">
+                </textarea>
+                            <ValidationMessage For="() => _blog.Post" />
+                            <br />
+                            <button type="submit" class="btn btn-info" @bind><span class="oi oi-action-redo" aria-hidden="true"></span>&nbsp;Update</button>&nbsp;
+                            <button type="button" class="btn btn-danger" @onclick="DeleteBlog"><span class="oi oi-trash" aria-hidden="true"></span>&nbsp;Delete</button>
                         </div>
-                        <div class="custom-file">
-                            <InputFile OnChange="HandleSelection" class="custom-file-input" id="inputGroupFile01" aria-describedby="inputGroupFileAddon01" />
-                            <label class="custom-file-label" for="inputGroupFile01">Choose image</label>
+                        <div class="col-6"></div>
+                        <div class="col-6" style="position:relative">
+                            <MarkdownRenderer Value="@_blog.Post" />
                         </div>
                     </div>
-
-                    <textarea rows="25" class="form-control"
-                              @bind-value="blog.Post"
-                              @bind-value:event="oninput">
-                </textarea>
-                    <ValidationMessage For="() => blog.Post" />
-                    <br />
-                    <button type="submit" class="btn btn-info" @bind><span class="oi oi-action-redo" aria-hidden="true"></span>&nbsp;Update</button>&nbsp;
-                    <button type="button" class="btn btn-danger" @onclick="DeleteBlog"><span class="oi oi-trash" aria-hidden="true"></span>&nbsp;Delete</button>
                 </div>
-                <div class="col-6"></div>
-                <div class="col-6" style="position:relative">
-                    <MarkdownRenderer Value="@blog.Post" />
-                </div>
-            </div>
-        </div>
-    </EditForm>
-}
+            </EditForm>
+        }
+    </Authorized>
 
+    <NotAuthorized>
+        you do not belong here
+    </NotAuthorized>
+</AuthorizeView>
 
 @code {
+    [CascadingParameter]
+    private Task<AuthenticationState> _authenticationStateTask { get; set; }
     [Parameter]
     public string Id { get; set; }
-    private BlogDTO blog = new BlogDTO();
+
+    private BlogDTO _blog = new BlogDTO();
+    private HttpClient _client;
 
     protected override async Task OnInitializedAsync()
     {
-        blog.Post = "";
-        blog = JsonConvert.DeserializeObject<BlogDTO>(await http.GetStringAsync($"blogs/{Id}"));
+        var user = (await _authenticationStateTask).User;
+
+        if (user.Identity.IsAuthenticated)
+        {
+            _client = _factory.CreateClient("authenticated");
+            _blog.Post = "";
+            _blog = JsonConvert.DeserializeObject<BlogDTO>(await _client.GetStringAsync($"blogs/{Id}"));
+        }
         await base.OnInitializedAsync();
     }
 
@@ -65,13 +84,13 @@
     {
         try
         {
-            await http.DeleteAsync($"blogs/{Id}");
-            toaster.Success("Blog deleted succesfully.");
-            navigationManager.NavigateTo("/");
+            await _client.DeleteAsync($"blogs/{Id}");
+            _toaster.Success("Blog deleted succesfully.");
+            _navigationManager.NavigateTo("/");
         }
         catch
         {
-            toaster.Error("Error while deleting blog!");
+            _toaster.Error("Error while deleting blog!");
         }
     }
 
@@ -85,7 +104,7 @@
             using (var memoryStream = new MemoryStream())
             {
                 await file.Data.CopyToAsync(memoryStream);
-                blog.Image = Convert.ToBase64String(memoryStream.ToArray());
+                _blog.Image = Convert.ToBase64String(memoryStream.ToArray());
             }
         }
     }
@@ -100,14 +119,14 @@
 
         try
         {
-            blog.CreatedOn = DateTime.Now;
-            http.PutAsJsonAsync<BlogDTO>($"blogs/{Id}", blog, options);
-            toaster.Success("Blog updated succesfully.");
-            navigationManager.NavigateTo("/");
+            _blog.CreatedOn = DateTime.Now;
+            _client.PutAsJsonAsync<BlogDTO>($"blogs/{Id}", _blog, options);
+            _toaster.Success("Blog updated succesfully.");
+            _navigationManager.NavigateTo("/");
         }
         catch
         {
-            toaster.Error("Error while updating blog!");
+            _toaster.Error("Error while updating blog!");
         }
     }
 }

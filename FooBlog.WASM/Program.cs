@@ -20,19 +20,18 @@ namespace FooBlog.WASM
             var builder = WebAssemblyHostBuilder.CreateDefault(args);
             builder.RootComponents.Add<App>("app");
 
-            // We register a named HttpClient here for the API
-            builder.Services.AddHttpClient("api", options => options.BaseAddress = new Uri("https://localhost:44324/odata/"))
+
+            builder.Services.AddHttpClient("authenticated", options => options.BaseAddress = new Uri("https://localhost:44324/odata/"))
                 .AddHttpMessageHandler(sp =>
                 {
                     var handler = sp.GetService<AuthorizationMessageHandler>()
-                        .ConfigureHandler(
-                            authorizedUrls: new[] { "https://localhost:44324/" },
-                            scopes: new[] { "FooBlog_api" });
+                         .ConfigureHandler(
+                             authorizedUrls: new[] { "https://localhost:44324/" },
+                             scopes: new[] { "FooBlog_api" });
                     return handler;
                 });
 
-            // we use the api client as default HttpClient
-            builder.Services.AddScoped(sp => sp.GetService<IHttpClientFactory>().CreateClient("api"));
+            builder.Services.AddHttpClient("anonymous", options => options.BaseAddress = new Uri("https://localhost:44324/odata/"));
 
             builder.Services.AddOidcAuthentication(options =>
             {

@@ -10,6 +10,7 @@ using FooBlog.Data;
 using System.Threading;
 using Microsoft.AspNet.OData;
 using Microsoft.AspNet.OData.Routing;
+using Microsoft.AspNetCore.Authorization;
 
 namespace FooBlog.API.Controllers
 {
@@ -28,7 +29,7 @@ namespace FooBlog.API.Controllers
             return Ok(_context.Blogs.Include(b => b.Comments));
         }
 
-        [EnableQuery]
+        [EnableQuery]        
         public IActionResult Get(int key)
         {
             var blog = _context.Blogs.Include(b => b.Comments).FirstOrDefault(p => p.ID == key);
@@ -40,6 +41,7 @@ namespace FooBlog.API.Controllers
             return Ok(blog);
         }
 
+        [Authorize]
         public async Task<IActionResult> Post([FromBody] Blog blog)
         {
             if (!ModelState.IsValid)
@@ -52,6 +54,7 @@ namespace FooBlog.API.Controllers
             return Created(blog);
         }
 
+        [Authorize]
         public async Task<IActionResult> Put([FromODataUri] int key, [FromBody] Blog blog)
         {
             if (!ModelState.IsValid)
@@ -77,6 +80,7 @@ namespace FooBlog.API.Controllers
             return Updated(blog);
         }
 
+        [Authorize]
         public async Task<IActionResult> Delete([FromODataUri] int key)
         {
             var blog = await _context.Blogs.FindAsync(key);
@@ -92,7 +96,7 @@ namespace FooBlog.API.Controllers
         }
 
 
-
+        [Authorize]
         [ODataRoute("blogs({key})/comments")]
         public async Task<IActionResult> PostComment([FromODataUri] int key, [FromBody] Comment comment)
         {
